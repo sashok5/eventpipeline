@@ -95,10 +95,10 @@ class SimilarEvents:
 
         for each_euclidean in euclideans:
             for each_idx in each_euclidean:
-                print(all_events[each_idx])
+                yield all_events[each_idx]
 
 
-if __name__ == "__main__":
+def event_recommendor(event_id):
     future_events = pd.read_csv('tables_as_csv/events.csv')
     future_events = future_events[['event_name', 'event_description']]
     future_events = future_events.to_dict(orient='records')
@@ -111,7 +111,10 @@ if __name__ == "__main__":
     past_events.columns = ['event_name', 'event_description']
     past_events = past_events.to_dict(orient='records')
     # selecting some random past event
-    past_event = past_events[7]         # Event....
+    past_event = past_events[int(event_id)]
 
     # 2) Testing our object below
-    SimilarEvents(past_event, future_events).run()
+    events_gen = SimilarEvents(past_event, future_events).run()
+    results = [event for event in events_gen]
+    return results
+

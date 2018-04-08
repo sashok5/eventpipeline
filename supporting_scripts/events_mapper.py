@@ -4,10 +4,10 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
-import matplotlib.pyplot as plt; plt.rcdefaults()
+# import matplotlib.pyplot as plt; plt.rcdefaults()
 import numpy as np
 import matplotlib
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import random
 
 
@@ -16,7 +16,6 @@ nltk.download('stopwords')
 nltk.download('punkt')
 
 # from sklearn.feature_extraction.text import TfidfVectorizer
-
 
 users_file = 'tables_as_csv/users.csv'
 future_events_file = 'tables_as_csv/events.csv'
@@ -44,14 +43,14 @@ def bar_plot(results_dict):
 
     width = 0.35  # set bar_width
 
-    plt.bar(ind, values1, color='r', width=width, edgecolor='white', label='suggestions')
-    plt.bar(ind + width, values2, color='y', width=width, edgecolor='white', label='attended in past')
-
-    plt.xlabel('words', fontweight='bold')
-    plt.xticks(ind + width / 2, key_values, rotation=60)
-    plt.ylabel('frequency')
-    plt.legend(loc='best')
-    plt.show()
+    # plt.bar(ind, values1, color='r', width=width, edgecolor='white', label='suggestions')
+    # plt.bar(ind + width, values2, color='y', width=width, edgecolor='white', label='attended in past')
+    #
+    # plt.xlabel('words', fontweight='bold')
+    # plt.xticks(ind + width / 2, key_values, rotation=60)
+    # plt.ylabel('frequency')
+    # plt.legend(loc='best')
+    # plt.show()
 
 
 class Events:
@@ -189,18 +188,18 @@ class TextAnalyzer:
             word_count = []
             for each_interest in user_interests:
                 try:
-                    word_count.append(bag_of_vocabulary[each_interest])
+                    word_count.append(str(bag_of_vocabulary[each_interest]))
                     word_name.append(each_interest)
                 except KeyError:
                     continue
             return dict(zip(word_name, word_count))
 
 
-if __name__ == "__main__":
+def user_frequency(user_name):
+    user_name = str(user_name)
     all_events = PresentAndPast().run()
     event_dict = dict(zip(['future_events', 'past_events'], all_events))
     results = []
     for event_identifier, each_event_group in event_dict.items():
-        results.append(TextAnalyzer(each_event_group, identifier=event_identifier).vector_mapping("Doron"))
-    # print(results)
-    bar_plot(results)  # plotting graph
+        results.append(TextAnalyzer(each_event_group, identifier=event_identifier).vector_mapping(user_name))
+    return results
