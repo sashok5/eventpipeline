@@ -13,9 +13,12 @@ class UserFrequency(Resource):
 
     def get(self, user_name):
         user_freq = user_frequency(user_name)
-        result_dict = {'past_frequency': user_freq[0],
-                       'suggested_events_frequency': user_freq[1]}
-        return {user_name: result_dict}
+        if user_freq is not None:
+            result_dict = {'past_frequency': user_freq[0],
+                           'suggested_events_frequency': user_freq[1]}
+            return {user_name: result_dict}
+        else:
+            return {'error': 'User not found, Please check'}
 
 
 class EventRecommendor(Resource):

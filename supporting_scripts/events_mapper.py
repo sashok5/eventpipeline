@@ -11,7 +11,7 @@ import matplotlib
 import random
 
 
-matplotlib.interactive(False)
+# matplotlib.interactive(False)
 nltk.download('stopwords')
 nltk.download('punkt')
 
@@ -134,6 +134,8 @@ class PresentAndPast:
         future_df = self.user_df("future")
         past_df = self.user_df("past")
         past_df['attended_events'] = past_df.apply(self.map_attended_events, axis=1)
+        # debug_point to add user_v_past_events
+        # print(past_df)
         return [future_df, past_df]
 
 
