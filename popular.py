@@ -1,59 +1,34 @@
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, MetaData, Table, func
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
-
-Base = declarative_base()
-DBSession = scoped_session(sessionmaker())
-metadata = MetaData()
-engine = None
-
-
-class Popular(Base):
-    __tablename__ = 'popular'
-    event_id = Column(Integer, primary_key=True)
-    title = Column('title', String)
-    rank = Column('rank', Integer)
-
-
-def init_sqlalchemy(dbname='postgresql://admin:admin@localhost:5432/groupup'):
-    global engine
-    engine = create_engine(dbname, echo=False)
-    DBSession.remove()
-    DBSession.configure(bind=engine, autoflush=False, expire_on_commit=False)
-    Base.metadata.create_all(engine)
+import db_manager as db
+from db_manager import Popular, Events, Attendances, EventViews
 
 
 def clear_popular():
+    db.DBSession.query(Popular).delete()
 
-    DBSession.query(Popular).delete()
+
+def future_events_by_popularity():
+    events = db.DBSession.query(Events.c.event_id,
+                                db.func.count(Attendances.c.event_id).label('c1'),
+                                db.func.count(EventViews.c.event_id).label('c2')) \
+        .filter(Events.c.event_date >= db.func.now()) \
+        .outerjoin(Attendances, Events.c.event_id == Attendances.c.event_id) \
+        .outerjoin(EventViews, Events.c.event_id == EventViews.c.event_id) \
+        .group_by(Events.c.event_id)
+    return events
 
 
-def pop_popular():
-    init_sqlalchemy()
+def save_popular():
     clear_popular()
 
-    events = Table('events', Base.metadata, autoload=True, autoload_with=engine)
+    pop = future_events_by_popularity()
 
-    users = Table('users', Base.metadata, autoload=True, autoload_with=engine)
+    for n in pop:
+        popular_event = Popular(event_id=n.event_id, num_of_attending=n.c1, num_of_clicks=n.c2)
+        db.DBSession.add(popular_event)
 
-    attendances = Table('attendances', Base.metadata, autoload=True, autoload_with=engine)
-
-    relationships = Table('relationships', Base.metadata, autoload=True, autoload_with=engine)
-
-    ranked_events = DBSession.query(events.c.event_id, events.c.title, func.count(events.c.event_id).label('count')) \
-        .filter(events.c.event_date >= func.now()) \
-        .outerjoin(attendances, events.c.event_id == attendances.c.event_id) \
-        .group_by(events.c.event_id, events.c.title) \
-        .order_by(func.count(events.c.event_id).desc())
-
-    for n in ranked_events:
-        popular_event = Popular(event_id=n.event_id, title=n.title, rank=n.count)
-        DBSession.add(popular_event)
-
-    DBSession.commit()
+    db.DBSession.commit()
 
 
 if __name__ == '__main__':
-    pop_popular()
+    db.init_sqlalchemy()
+    save_popular()

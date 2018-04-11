@@ -98,7 +98,7 @@ class SimilarEvents:
                 yield all_events[each_idx]
 
 
-def event_recommendor(event_id):
+def event_recommender(event_id):
     future_events = pd.read_csv('tables_as_csv/events.csv')
     future_events = future_events[['event_name', 'event_description']]
     future_events = future_events.to_dict(orient='records')
