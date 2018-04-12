@@ -5,10 +5,12 @@ from nltk.tokenize import wordpunct_tokenize as tokenize
 from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.metrics.pairwise import cosine_similarity
 # from sklearn.feature_extraction.text import CountVectorizer
 # from scipy.spatial.distance import cosine
 import pandas as pd
 import numpy as np
+
 
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -33,24 +35,25 @@ class SimilarEvents:
 
         # event check below
         if new_event in event_names:
+            print("Past event present in Future events, something is wrong.")
             return self.events_array
         else:
             self.events_array.append(self.event_details)
             return self.events_array
 
-    @staticmethod
-    def lem_tokens(tokens):
-        lemmer = nltk.stem.WordNetLemmatizer()
-        return [lemmer.lemmatize(token) for token in tokens]
-
-    def lem_normalize(self, text):
-        remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
-        return self.lem_tokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
-
-    def vectorize(self, documents):
-        TfidfVec = TfidfVectorizer(tokenizer=self.lem_normalize, stop_words='english')
-        tfidf = TfidfVec.fit_transform(documents)
-        return (tfidf * tfidf.T).toarray()
+    # @staticmethod
+    # def lem_tokens(tokens):
+    #     lemmer = nltk.stem.WordNetLemmatizer()
+    #     return [lemmer.lemmatize(token) for token in tokens]
+    #
+    # def lem_normalize(self, text):
+    #     remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
+    #     return self.lem_tokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+    #
+    # def vectorize(self, documents):
+    #     TfidfVec = TfidfVectorizer(tokenizer=self.lem_normalize, stop_words='english')
+    #     tfidf = TfidfVec.fit_transform(documents)
+    #     return (tfidf * tfidf.T).toarray()
 
     @staticmethod
     def cos_sim(a, b):
@@ -63,11 +66,36 @@ class SimilarEvents:
         norm_b = np.linalg.norm(b)
         return dot_product / (norm_a * norm_b)
 
-    def run(self):
+    def run(self, identifier='None'):
         all_events = self.__add_events()
 
         # we shall check events relation based on their mapping.
         events = [event['event_description'] for event in all_events]
+
+        # mapping cosine logic here
+        if identifier == 'cosine':
+            tfidf_vectorizer = TfidfVectorizer()
+            tfidf_matrix = tfidf_vectorizer.fit_transform(events)
+            length = len(events)
+            cosine = cosine_similarity(tfidf_matrix[length - 1], tfidf_matrix)
+            values = cosine.tolist()[0]
+            values.pop()
+
+            final_values = {}
+            # Arranging values in ascending order:
+            for idx, value in enumerate(values):
+                if value in final_values:
+                    final_values[value].append(idx)
+                else:
+                    final_values[value] = [idx]
+
+            if len(final_values) > 0:
+                sorted_values = sorted(list(final_values.keys()))
+                final_indices = [final_values[value] for value in sorted_values]
+
+                for each_index_list in final_indices:
+                    for each_idx in each_index_list:
+                        yield all_events[each_idx]
 
         # formatting data by removing stemming.
         punctuation_stemming = str.maketrans("", "", string.punctuation)
@@ -98,7 +126,7 @@ class SimilarEvents:
                 yield all_events[each_idx]
 
 
-def event_recommender(event_id):
+def event_recommender(event_id, identifier=None):
     future_events = pd.read_csv('tables_as_csv/events.csv')
     future_events = future_events[['event_name', 'event_description']]
     future_events = future_events.to_dict(orient='records')
@@ -112,6 +140,12 @@ def event_recommender(event_id):
     past_events = past_events.to_dict(orient='records')
     # selecting some random past event
     past_event = past_events[int(event_id)]
+
+    # 1) If identifier is cosine
+    if identifier == 'cosine':
+        events_gen = SimilarEvents(past_event, future_events).run(identifier='cosine')
+        results = [event for event in events_gen]
+        return results
 
     # 2) Testing our object below
     events_gen = SimilarEvents(past_event, future_events).run()
