@@ -41,19 +41,19 @@ class SimilarEvents:
             self.events_array.append(self.event_details)
             return self.events_array
 
-    # @staticmethod
-    # def lem_tokens(tokens):
-    #     lemmer = nltk.stem.WordNetLemmatizer()
-    #     return [lemmer.lemmatize(token) for token in tokens]
-    #
-    # def lem_normalize(self, text):
-    #     remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
-    #     return self.lem_tokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
-    #
-    # def vectorize(self, documents):
-    #     TfidfVec = TfidfVectorizer(tokenizer=self.lem_normalize, stop_words='english')
-    #     tfidf = TfidfVec.fit_transform(documents)
-    #     return (tfidf * tfidf.T).toarray()
+    @staticmethod
+    def lem_tokens(tokens):
+        lemmer = nltk.stem.WordNetLemmatizer()
+        return [lemmer.lemmatize(token) for token in tokens]
+
+    def lem_normalize(self, text):
+        remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
+        return self.lem_tokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+
+    def vectorize(self, documents):
+        TfidfVec = TfidfVectorizer(tokenizer=self.lem_normalize, stop_words='english')
+        tfidf = TfidfVec.fit_transform(documents)
+        return (tfidf * tfidf.T).toarray()
 
     @staticmethod
     def cos_sim(a, b):

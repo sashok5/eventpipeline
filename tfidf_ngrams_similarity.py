@@ -84,6 +84,7 @@ t1 = time.time()
 
 matches_df = matches_df[
     matches_df['similarity'].between(0.10000, 0.99999)].sort_values(by='similarity', ascending=False)
+
 matches_df.to_csv('tables_as_csv/matches_df.csv')
 
 t = time.time() - t1

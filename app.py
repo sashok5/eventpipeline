@@ -27,9 +27,11 @@ class EventRecommender(Resource):
     @api.expect(pagination)
     def get(self, event_id):
         args = pagination.parse_args()
-        identifier = args['identifier'].strip().lower()
-        if identifier != "cosine":
-            identifier = None
+        identifier = args['identifier']
+        if identifier is not None:
+            identifier = args['identifier'].strip().lower()
+            if identifier != "cosine":
+                identifier = None
         recommended_events = event_recommender(int(event_id), identifier=identifier)
         return {'suggested_events': recommended_events}
 
