@@ -24,6 +24,7 @@ class UserFrequency(Resource):
         return {user_name: result_dict}
 
 
+@api.doc(params={'event_id': "event_id"})
 class EventRecommender(Resource):
 
     @api.expect(pagination)
@@ -35,7 +36,7 @@ class EventRecommender(Resource):
             if identifier != "cosine":
                 identifier = None
         recommended_events = event_recommender(int(event_id), identifier=identifier)
-        return {'suggested_events': recommended_events}
+        return recommended_events
 
 
 class FillPopular(Resource):
