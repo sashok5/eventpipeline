@@ -17,18 +17,21 @@ def future_events_by_popularity():
     return events
 
 
-def save_popular():
+def gen_popular():
+
+    db.init_sqlalchemy()
+
     clear_popular()
 
     pop = future_events_by_popularity()
 
+    result = []
+
     for n in pop:
         popular_event = Popular(event_id=n.event_id, num_of_attending=n.c1, num_of_clicks=n.c2)
         db.DBSession.add(popular_event)
+        result.append(popular_event)
 
     db.DBSession.commit()
 
-
-if __name__ == '__main__':
-    db.init_sqlalchemy()
-    save_popular()
+    return result

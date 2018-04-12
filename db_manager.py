@@ -18,6 +18,14 @@ class Popular(Base):
     num_of_clicks = Column(Integer)
 
 
+class Recommended(Base):
+    __tablename__ = 'recommended'
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer)
+    user_id = Column(Integer)
+    rank = Column(Integer)
+
+
 def init_sqlalchemy():
     DBSession.remove()
     DBSession.configure(bind=engine, autoflush=False, expire_on_commit=False)
