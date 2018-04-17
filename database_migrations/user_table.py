@@ -18,7 +18,7 @@ users = pd.read_csv(users_file, encoding='latin-1')
 # Breaking down the df to only important features of user
 user_df = users[['member_id', 'link', 'member_name', 'state']]
 user_df = user_df.drop_duplicates(['member_id', 'link', 'member_name', 'state'])
-user_df = user_df[:3000]        # taking only 3000 users for now
+user_df = user_df[:10000]        # taking only 3000 users for now
 
 
 def user_groups(row):
@@ -28,5 +28,5 @@ def user_groups(row):
     return groups
 
 
-user_df['groups'] = user_df.apply(user_groups, axis=1)
-user_df.to_csv("../formatted_tables/users_formatted.csv")
+# user_df['groups'] = user_df.apply(user_groups, axis=1)
+# user_df.to_csv("../formatted_tables/users_formatted.csv")
