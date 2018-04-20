@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_restplus import Api, Resource
-#import popular
 from supporting_scripts.events_mapper import user_frequency
 from supporting_scripts.similar_events import event_recommender
 from supporting_scripts.popular_suggestions import gen_popular
