@@ -70,6 +70,32 @@ class User(BaseModel):
         else:
             return True
 
+    attending = []
+
+    @classmethod
+    def events_attending(cls, db_session, user_id):
+        res = db_session.query(Attendances.event_id).filter(Attendances.user_id == user_id).all()
+        attending = [r for r in res]
+        return attending
+
+    @classmethod
+    def following_user_events(cls, db_session, user_id):
+        res = db_session.query(Event.event_id, func.count(Event.event_id).label('event_count')). \
+            join(Attendances, Attendances.event_id == Event.event_id). \
+            join(Relationship, Attendances.user_id == Relationship.followed_id) \
+            .filter(Relationship.follower_id == user_id, Event.event_date >= func.now()). \
+            group_by(Event.event_id).order_by('event_count DESC')
+        return res
+
+
+class Relationship(BaseModel):
+    __tablename__ = "relationships"
+    id = Column(BigInteger, primary_key=True)
+    follower_id = Column(BigInteger)
+    followed_id = Column(BigInteger)
+    created_at = Column(TIMESTAMP)
+    updated_at = Column(TIMESTAMP)
+
 
 class UserInGroup(BaseModel):
     __tablename__ = "users_in_groups"
@@ -83,6 +109,19 @@ class UserInGroup(BaseModel):
     def __init__(self, user_id, group_id):
         self.user_id = user_id
         self.group_id = group_id
+
+
+class UserTopic(BaseModel):
+    __tablename__ = "user_topics"
+
+    user_id = Column(BigInteger, primary_key=True)
+    topic_id = Column(BigInteger, primary_key=True)
+    true_score = Column(Float)
+    predicted_score = Column(Float)
+
+    def __init__(self, user_id, topic_id):
+        self.user_id = user_id
+        self.topic_id = topic_id
 
 
 class Event(BaseModel):
@@ -142,6 +181,12 @@ class Event(BaseModel):
         self.created_by_user_id = 1
         self.updated_at = created
         self.meetup_id = meetup_id
+
+    @classmethod
+    def users_attending(cls, db_session, event_id):
+        attending = db_session.query(Attendances.event_id).filter(Attendances.user_id == user_id).all()
+        result = [r for r in attending]
+        return result
 
 
 class EventGroup(BaseModel):
@@ -240,6 +285,28 @@ class Popular(BaseModel):
 
     num_of_clicks = Column(Integer)
 
+    def __init__(self, event_id, num1, num2):
+        self.event_id = event_id
+        self.num_of_attending = num1
+        self.num_of_clicks = num2
+
+    @classmethod
+    def get_popular_events(cls, db_session):
+        event_attendances = db_session.query(Event.event_id,
+                                             func.count(Attendances.event_id).label('attendance_count')) \
+            .filter(Event.event_date >= func.now()) \
+            .outerjoin(Attendances, Event.event_id == Attendances.event_id) \
+            .group_by(Event.event_id).limit(20)
+
+        result = []
+
+        for i, event in enumerate(event_attendances):
+            event_click = db_session.query(func.count(EventView.event_id).label('click_count')).filter(
+                EventView.event_id == event.event_id).group_by(EventView.event_id).first()
+            result.append((event, event_click))
+
+        return result
+
 
 class Recommended(BaseModel):
     __tablename__ = 'recommended'
@@ -251,6 +318,11 @@ class Recommended(BaseModel):
     user_id = Column(BigInteger)
 
     rank = Column(Integer)
+
+    def __init__(self, event_id, user_id, rank):
+        self.event_id = event_id
+        self.user_id = user_id
+        self.rank = rank
 
 
 class EventSimilarity(BaseModel):
@@ -275,23 +347,14 @@ class EventTopic(BaseModel):
 
     topic_id = Column(BigInteger, primary_key=True)
 
-    topic_string = Column(VARCHAR)
-
-    def __init__(self, topic_id, topic_string):
-        self.topic_id = topic_id
-        self.topic_string = topic_string
-
-
-class EventTopicMapping(BaseModel):
-    __tablename__ = "event_topic_mappings"
-
-    topic_id = Column(BigInteger, primary_key=True)
-
     event_id = Column(BigInteger, primary_key=True)
 
-    def __init__(self, topic_id, event_id):
+    score = Column(Float)
+
+    def __init__(self, topic_id, event_id, score):
         self.topic_id = topic_id
         self.event_id = event_id
+        self.score = score
 
 
 class EventView(BaseModel):
@@ -303,22 +366,34 @@ class EventView(BaseModel):
     updated_at = Column(TIMESTAMP)
 
 
-"""
-# Create events table
-Events = Table('events', metadata, autoload=True, autoload_with=DBSession.engine)
+class Topic(BaseModel):
+    __tablename__ = "topics"
 
-# Create users table
-Users = Table('users', metadata, autoload=True, autoload_with=engine)
+    topic_id = Column(BigInteger, primary_key=True)
 
-# Create attendances table
-Attendances = Table('attendances', metadata, autoload=True, autoload_with=engine)
+    topic_string = Column(VARCHAR)
 
-# Create relationships such as who is following whom
-Relationships = Table('relationships', metadata, autoload=True, autoload_with=engine)
+    def __init__(self, topic_id, topic_string):
+        self.topic_id = topic_id
+        self.topic_string = topic_string
 
-# Create Tags, such as event categories and also user interests
-Tags = Table('tags', metadata, autoload=True, autoload_with=engine)
 
-# Create EventViews, tracking which users viewed events
-EventViews = Table('event_views', metadata, autoload=True, autoload_with=engine)
-"""
+class TopicTerm(BaseModel):
+    __tablename__ = "topic_terms"
+
+    topic_id = Column(BigInteger, primary_key=True)
+    term = Column(VARCHAR, primary_key=True)
+    score = Column(Float)
+
+    def __init__(self, topic_id, term, score):
+        self.topic_id = topic_id
+        self.term = term
+        self.score = score
+
+
+class UserTerm(BaseModel):
+    __tablename__ = "user_terms"
+    id = Column(BigInteger, primary_key=True)
+    term = Column(VARCHAR)
+    score = Column(Float)
+

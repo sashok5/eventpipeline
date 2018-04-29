@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import re
-from db_model import Event, EventGroup, EventSimilarity
+from db_model import Event, EventGroup, EventSimilarity, EventCategory
 from parse_text import parse_text
 
 nltk.download('punkt')
@@ -45,12 +45,12 @@ class Event_Similarity:
     def save(self):
 
         # we shall check events relation based on their mapping.
-        events = [event.group_name + ' ' + event.title + ' ' + event.desc for event in self.dataset]
+        events = [event.group_name + ' ' + event.shortname + ' ' + event.title + ' ' + event.desc for event in
+                  self.dataset]
 
         vectorizer = TfidfVectorizer(analyzer='word', min_df=0.02, max_df=0.75)
 
-        modified_arr = [[porter.stem(i.lower()) for i in tokenize(parse_text(d)) if
-                         i.lower() not in stop_words] for d in events]
+        modified_arr = [tokenize(parse_text(d)) for d in events]
 
         modified_documents = [' '.join(i) for i in modified_arr]
 
@@ -68,11 +68,10 @@ class Event_Similarity:
                     # skip the events with the same title
                     event1 = self.dataset[x]
                     event2 = self.dataset[y]
-                    if event1.title.lower() != event2.title.lower():
-                        similarity = EventSimilarity(event_id_1=event1.event_id,
-                                                     event_id_2=event2.event_id,
-                                                     similarity=value)
-                        self.session.add(similarity)
+                    similarity = EventSimilarity(event_id_1=event1.event_id,
+                                                 event_id_2=event2.event_id,
+                                                 similarity=value)
+                    self.session.add(similarity)
                 y += 1
             x += 1
             self.session.commit()
@@ -82,9 +81,11 @@ def gen_similarities(db_session, min_similarity, max_similarity, event_id=None, 
     dataset = db_session.query(Event.event_id,
                                Event.title,
                                Event.desc,
-                               EventGroup.group_name) \
+                               EventGroup.group_name,
+                               EventCategory.shortname) \
         .join(EventGroup,
-              Event.group_id == EventGroup.group_id).all()
+              Event.group_id == EventGroup.group_id) \
+        .join(EventCategory, Event.category_id == EventCategory.category_id).all()
 
     # wipe previous similarities
     db_session.query(EventSimilarity).delete()

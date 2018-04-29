@@ -19,7 +19,12 @@ def adapt_numpy_int64(numpy_int64):
     return AsIs(numpy_int64)
 
 
+def adapt_numpy_float32(numpy_float32):
+    return AsIs(numpy_float32)
+
+
 register_adapter(np.int64, adapt_numpy_int64)
+register_adapter(np.float32, adapt_numpy_float32)
 
 
 def migrate_dataset(path_to_datasets, db_session):
@@ -82,7 +87,9 @@ def migrate_justevents(path, db_session):
     create_events_additional('events_with_groups.csv', db_session)
     create_events_additional('events_with_groups1.csv', db_session)
     create_events_additional('events_with_groups2.csv', db_session)
+    create_events_additional('events_with_groups3.csv', db_session)
     create_events_additional('events_with_groups4.csv', db_session)
+
     for event in db_session.query(Event):
         Attendances.generate_attendances(db_session, event.event_id, event.group_id, event.rsvp_count)
     db_session.commit()

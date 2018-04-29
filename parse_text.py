@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
 import string
 import re
+from collections import defaultdict
 
 links = re.compile(
     '(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})',
@@ -16,6 +17,20 @@ time = re.compile(
 )
 
 
+def load_stopwords(inpath="stopwords.txt"):
+    """
+    Load stopwords from a file into a set.
+    """
+    stopwords = set()
+    with open(inpath) as f:
+        lines = f.readlines()
+        for l in lines:
+            l = l.strip().lower()
+            if len(l) > 0:
+                stopwords.add(l)
+    return stopwords
+
+
 def parse_html_plus_urls(text):
     soup = BeautifulSoup(text, 'html.parser')
     text = soup.get_text()
@@ -26,9 +41,10 @@ def parse_html_plus_urls(text):
 def parse_stop_words_punctuation(text):
     text = punctuation.sub(' ', text)
     text = text.strip()
-    stop = stopwords.words('english')
+    stopwords1 = stopwords.words('english')
+    stopwords2 = load_stopwords()
     # Exclude stopwords with Python's list comprehension and pandas.DataFrame.apply.
-    text = ' '.join([word for word in text.split() if word not in stop])
+    text = ' '.join([word for word in text.split() if word not in stopwords1 and word not in stopwords2])
     return text
 
 

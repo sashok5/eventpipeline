@@ -1,11 +1,7 @@
 from flask import Flask
 from flask_restplus import Api, Resource
-from supporting_scripts.events_mapper import user_frequency
-from supporting_scripts.similar_events import event_recommender
-from supporting_scripts.popular_suggestions import gen_popular
-from supporting_scripts.follower_suggestions import gen_follower_events
 from flask_restplus import reqparse
-
+import Recommender as R
 
 app = Flask(__name__)
 api = Api(app)
@@ -13,6 +9,9 @@ api = Api(app)
 pagination = reqparse.RequestParser()
 pagination.add_argument('identifier', type=str, required=False)
 
+db = 'postgresql://admin:admin@localhost:5432/groupup'
+
+'''
 
 class UserFrequency(Resource):
 
@@ -36,26 +35,43 @@ class EventRecommender(Resource):
                 identifier = None
         recommended_events = event_recommender(int(event_id), identifier=identifier)
         return recommended_events
+'''
 
 
 class FillPopular(Resource):
 
     def get(self):
-        pop = gen_popular()
-        return {'popular': len(pop)}
+        recommender = R.Recommender(db)
+        recommender.generate_popular()
+        return {'popular': 'OK'}
 
 
 class FillRecommended(Resource):
 
     def get(self, user_id):
-        res = gen_follower_events(user_id)
-        return {'recommended_by_followers': len(res)}
+        recommender = R.Recommender(db)
+        recommender.recommend_events(user_id)
+        return {'recommended': 'OK'}
+
+class FillTopics(Resource):
+    def get(self):
+        recommender = R.Recommender(db)
+        recommender.generate_topics()
+
+class KeywordSearch(Resource):
+    def get(self, search_string):
+        recommender = R.Recommender(db)
+        res = recommender.search_keyword(search_string)
+        return {'result': res}
 
 
-api.add_resource(UserFrequency, '/api/users/<user_name>', endpoint='user_fav_words')
-api.add_resource(EventRecommender, '/api/events/<event_id>', endpoint='event_recommendations')
+# api.add_resource(UserFrequency, '/api/users/<user_name>', endpoint='user_fav_words')
+# api.add_resource(EventRecommender, '/api/events/<event_id>', endpoint='event_recommendations')
 api.add_resource(FillPopular, '/api/events/popular', endpoint='generate_popular')
-api.add_resource(FillRecommended, '/api/events/recommended/<user_id>', endpoint='generate_recommended')
+api.add_resource(FillRecommended, '/api/users/<user_id>', endpoint='generate_recommended')
+api.add_resource(FillTopics, '/api/topics/', endpoint='generate_topics')
+api.add_resource(KeywordSearch, '/api/events/search/<search_string>', endpoint='keywords_search')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
