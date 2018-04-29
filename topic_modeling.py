@@ -133,7 +133,7 @@ class Topic_Modeling:
 
         self.session.commit()
 
-    def gensim_create_topics(self, num):
+    def gensim_create_topics(self):
 
         data = [event.group_name + ' ' + event.title + ' ' + event.desc for event in self.dataset]
 
@@ -208,7 +208,7 @@ class Topic_Modeling:
 
         df = pd.DataFrame(columns=('event_id', 'title', 'similarity'), data=results)
 
-        return df.to_json()
+        return df.to_json(orient="records")
 
     def gensim_generate_corpus(self):
         data = self.session.query(Event.event_id,
