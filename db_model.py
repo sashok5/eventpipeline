@@ -116,12 +116,26 @@ class UserTopic(BaseModel):
 
     user_id = Column(BigInteger, primary_key=True)
     topic_id = Column(BigInteger, primary_key=True)
+    topic_count = Column(Integer)
     true_score = Column(Float)
     predicted_score = Column(Float)
 
-    def __init__(self, user_id, topic_id):
+    def __init__(self, user_id, topic_id, topic_count):
         self.user_id = user_id
         self.topic_id = topic_id
+        self.topic_count = topic_count
+
+    @classmethod
+    def update_predicted_score(cls, session, user_id, topic_id, predicted_score):
+        score = session.query(UserTopic).filter(UserTopic.user_id == user_id, UserTopic.topic_id == topic_id).first()
+        if score is None:
+            score = UserTopic(user_id, topic_id, 0)
+            score.true_score = 0
+            score.predicted_score = predicted_score
+            session.add(score)
+        else:
+            score.predicted_score = predicted_score
+        session.commit()
 
 
 class Event(BaseModel):
@@ -319,10 +333,13 @@ class Recommended(BaseModel):
 
     rank = Column(Integer)
 
-    def __init__(self, event_id, user_id, rank):
+    type = Column(Integer)
+
+    def __init__(self, event_id, user_id, rank, type):
         self.event_id = event_id
         self.user_id = user_id
         self.rank = rank
+        self.type = type
 
 
 class EventSimilarity(BaseModel):
@@ -396,4 +413,3 @@ class UserTerm(BaseModel):
     id = Column(BigInteger, primary_key=True)
     term = Column(VARCHAR)
     score = Column(Float)
-

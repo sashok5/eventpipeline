@@ -3,6 +3,7 @@ from nltk.corpus import stopwords
 import string
 import re
 from collections import defaultdict
+import spacy
 
 links = re.compile(
     '(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9]\.[^\s]{2,})',
@@ -15,6 +16,18 @@ punctuation = re.compile(
 time = re.compile(
     r'(1[012]|[1-9]):[0-5][0-9](\\s)?(?i)(am|pm)'
 )
+
+# Initialize spacy 'en' model, keeping only tagger component (for efficiency)
+# Run in terminal: python3 -m spacy download en
+nlp = spacy.load('en', disable=['parser', 'ner'])
+
+
+def lemmatization(text, allowed_postags=['NOUN', 'ADJ', 'VERB', 'ADV']):
+    """https://spacy.io/api/annotation"""
+    doc = nlp(text)
+    result = " ".join(
+        [token.lemma_ if token.lemma_ not in ['-PRON-'] else '' for token in doc if token.pos_ in allowed_postags])
+    return result
 
 
 def load_stopwords(inpath="stopwords.txt"):

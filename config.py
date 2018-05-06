@@ -1,0 +1,1 @@
+db_connection_string = 'postgresql://admin:admin@localhost:5432/groupup'

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_restplus import Api, Resource
 from flask_restplus import reqparse
 import Recommender as R
@@ -53,10 +53,18 @@ class FillRecommended(Resource):
         recommender.recommend_events(user_id)
         return {'recommended': 'OK'}
 
+
 class FillTopics(Resource):
     def get(self):
+
+        num_topics = 7
+        num_words = 10
+        num_iter = 30
+
         recommender = R.Recommender(db)
-        recommender.generate_topics()
+        recommender.generate_topics(int(num_topics), int(num_words), int(num_iter))
+        recommender.update_user_topics()
+
 
 class KeywordSearch(Resource):
     def get(self, search_string):
@@ -65,13 +73,28 @@ class KeywordSearch(Resource):
         return {'result': res}
 
 
+class CollabFiltering(Resource):
+    def get(self):
+        r = R.Recommender(db)
+        r.run_collab_filtering()
+        return {'result': 'OK'}
+
+
+class ContentBasedSimilarities(Resource):
+    def get(self):
+        r = R.Recommender(db)
+        r.cosine_similarity()
+        return {'result': 'OK'}
+
+
 # api.add_resource(UserFrequency, '/api/users/<user_name>', endpoint='user_fav_words')
 # api.add_resource(EventRecommender, '/api/events/<event_id>', endpoint='event_recommendations')
 api.add_resource(FillPopular, '/api/events/popular', endpoint='generate_popular')
 api.add_resource(FillRecommended, '/api/users/<user_id>', endpoint='generate_recommended')
 api.add_resource(FillTopics, '/api/topics/', endpoint='generate_topics')
 api.add_resource(KeywordSearch, '/api/events/search/<search_string>', endpoint='keywords_search')
-
+api.add_resource(CollabFiltering, '/api/users/collab_filtering', endpoint='collabl_filtering')
+api.add_resource(ContentBasedSimilarities, '/api/events/cb_similarities', endpoint='cosine_similarities')
 
 if __name__ == '__main__':
     app.run(debug=True)
